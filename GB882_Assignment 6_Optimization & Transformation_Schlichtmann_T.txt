@@ -1,0 +1,139 @@
+GB883
+Assignment 6 - Optimization & Transformation
+By Taran Schlichtmann
+
+
+
+/* Number of storm events and sum of crop damage by reference location. Concatenating state FIPS code and county FIPS code. Results to only show reference locations tied to a county. Results sorted first by damage descending and then by number of events descending and results limited to 100 */
+SELECT
+    CONCAT(
+        STATE_FIPS_CODE,
+        ' - ',
+        CZ_FIPS_CODE,
+        ' - ',
+        REFERENCE_LOCATION
+    ) AS REFERENCE_LOCATION,
+    COUNT(*) AS EVENT_COUNT,
+    SUM(DAMAGE_CROPS) AS TOTAL_CROP_DAMAGE
+FROM
+    SEVERE_WEATHER
+WHERE
+    CZ_TYPE = 'C'
+GROUP BY
+    STATE_FIPS_CODE,
+    CZ_FIPS_CODE,
+    REFERENCE_LOCATION
+ORDER BY
+    TOTAL_CROP_DAMAGE DESC,
+    EVENT_COUNT DESC
+LIMIT
+    100;
+    /* Duration of events in minutes. Including event ID, event type, the start and end time, and duration in results. Sorting from longest to shortest duration */
+SELECT
+    EVENT_ID,
+    EVENT_TYPE,
+    EVENT_BEGIN_TIME,
+    EVENT_END_TIME,
+    DATEDIFF(MINUTES, EVENT_BEGIN_TIME, EVENT_END_TIME) AS DURATION_MINUTES
+FROM
+    SEVERE_WEATHER
+ORDER BY
+    DURATION_MINUTES DESC,
+    EVENT_ID;
+    /* Updating previous query to categorize and count the events by their duration. Using a case statement to categorize each event and then counting the number of events in each category. Events less than 60 minutes are classified as 'under an hour' and anything at or above 60 minutes as 'at least an hour'. */
+SELECT
+    categorized_events.duration_category,
+    COUNT(*) AS event_count
+FROM
+    (
+        SELECT
+            EVENT_ID,
+            EVENT_TYPE,
+            EVENT_BEGIN_TIME,
+            EVENT_END_TIME,
+            DATEDIFF(MINUTES, EVENT_BEGIN_TIME, EVENT_END_TIME) AS DURATION_MINUTES,
+            CASE
+                WHEN DATEDIFF(MINUTES, EVENT_BEGIN_TIME, EVENT_END_TIME) < 60 THEN 'under an hour'
+                ELSE 'at least an hour'
+            END AS duration_category
+        FROM
+            SEVERE_WEATHER
+    ) AS categorized_events
+GROUP BY
+    categorized_events.duration_category;
+    /* Counting the number of storms by weather forecast office and month. Results to only include WFO, month, and number of events. Using the event_begin_time as the timestamp. */
+SELECT
+    WFO,
+    MONTH(EVENT_BEGIN_TIME) AS EVENT_MONTH,
+    COUNT(*) AS EVENT_COUNT
+FROM
+    SEVERE_WEATHER
+GROUP BY
+    WFO,
+    MONTH(EVENT_BEGIN_TIME)
+ORDER BY
+    WFO,
+    EVENT_MONTH;
+    /* Updating the previous query to include the total number of events during the year at each WFO. Results to include WFO, month, number of events that month for the WFO, and the total number of events that year for the WFO. */
+SELECT
+    WFO,
+    MONTH(EVENT_BEGIN_TIME) AS EVENT_MONTH,
+    COUNT(*) AS EVENTS_THIS_MONTH,
+    SUM(COUNT(*)) OVER (PARTITION BY WFO) AS EVENTS_THIS_YEAR
+FROM
+    SEVERE_WEATHER
+GROUP BY
+    WFO,
+    MONTH(EVENT_BEGIN_TIME)
+ORDER BY
+    WFO,
+    EVENT_MONTH;
+    /* Query of the severe_weather table before dropping */
+SELECT
+    *
+FROM
+    SEVERE_WEATHER
+LIMIT
+    5;
+    /* Deleting the severe_weather table */
+    DROP TABLE SEVERE_WEATHER;
+    /* Restoring the severe_weather table */
+    UNDROP TABLE SEVERE_WEATHER;
+    /* Confirming table was restored. */
+SELECT
+    *
+FROM
+    SEVERE_WEATHER
+LIMIT
+    5;
+    /* Changing all event types to 'spilled milk'. */
+UPDATE
+    SEVERE_WEATHER
+SET
+    EVENT_TYPE = 'spilled milk';
+    /*Rolling back spilled milk */
+    CREATE
+    OR REPLACE TABLE SEVERE_WEATHER AS (
+        SELECT
+            *
+        FROM
+            SEVERE_WEATHER BEFORE (
+                statement => '01c02208-0003-c3ef-0009-de2a00062052'
+            )
+    );
+    /* Verifying rollback was completed as intended */
+SELECT
+    *
+FROM
+    SEVERE_WEATHER
+LIMIT
+    5;
+    /* Copying state_sizes table for development */
+    CREATE TABLE state_sizes_dev CLONE state_sizes;
+    /* Query history */
+SELECT
+    *
+FROM
+    table (information_schema.query_history())
+ORDER BY
+    start_time DESC;
