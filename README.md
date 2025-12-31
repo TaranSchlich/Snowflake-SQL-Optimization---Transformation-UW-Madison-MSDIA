@@ -1,4 +1,7 @@
 # Optimization & Transformations  
+**By: Taran Schlichtmann**
+**Date: 11/02/2025**
+
 SQL, Snowflake Features, and Data Engineering Workflows
 
 Applying SQL techniques, Snowflake optimization features, and data‑engineering‑oriented transformations. The assignment required writing SQL, performing controlled table modifications, rolling back changes using Snowflake Time Travel, and exporting results into Excel for documentation.
