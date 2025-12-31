@@ -1,5 +1,6 @@
 # Optimization & Transformations  
 **By: Taran Schlichtmann**
+
 **Date: 11/02/2025**
 
 SQL, Snowflake Features, and Data Engineering Workflows
